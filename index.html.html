@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Budget Ledger — July 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-black:#1B1814;
+    --ink-black-2:#221E18;
+    --paper:#F2EAD8;
+    --paper-2:#EAE0C8;
+    --paper-line:#CBB890;
+    --ink-text:#2A2118;
+    --ink-text-soft:#5B4F3E;
+    --danger:#A8311F;
+    --safe:#3F6B47;
+    --gold:#B8902E;
+    --amber:#C08A28;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(184,144,46,0.08), transparent 50%),
+      radial-gradient(ellipse at 100% 110%, rgba(168,49,31,0.07), transparent 50%),
+      var(--ink-black);
+    font-family:'Inter',sans-serif;
+    color:var(--ink-text);
+    padding:28px 14px 60px;
+    min-height:100vh;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+
+  .eyebrow{
+    color:#C9BBA0;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    text-align:center;
+    margin-bottom:6px;
+    opacity:.75;
+  }
+  .title{
+    font-family:'Special Elite',cursive;
+    color:#F2EAD8;
+    text-align:center;
+    font-size:clamp(22px,5vw,32px);
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    margin:0 0 4px;
+  }
+  .subtitle{
+    text-align:center;
+    color:#9C8E76;
+    font-size:13px;
+    margin-bottom:26px;
+  }
+
+  .ledger{
+    background:var(--paper);
+    border:1px solid #C9B98E;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.04) inset;
+    border-radius:3px;
+    overflow:hidden;
+    position:relative;
+  }
+  .ledger::before{
+    content:"";
+    position:absolute; top:0; left:0; right:0; height:6px;
+    background:linear-gradient(90deg,var(--gold),var(--danger) 50%,var(--gold));
+    opacity:.85;
+  }
+
+  .section{
+    padding:22px 24px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .section:last-child{border-bottom:none;}
+
+  .section-label{
+    font-family:'Special Elite',cursive;
+    font-size:12.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-text-soft);
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label .num{color:var(--gold);}
+
+  /* ---- Today strip ---- */
+  .today-strip{
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    background:var(--paper-2);
+    flex-wrap:wrap;
+  }
+  .today-left{font-size:13.5px; line-height:1.5;}
+  .today-left b{font-family:'IBM Plex Mono',monospace;}
+  .today-right{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:14px;
+    text-align:right;
+  }
+  .today-right .small{display:block;font-family:'Inter';font-weight:500;font-size:11px;color:var(--ink-text-soft);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+
+  /* ---- mode toggle ---- */
+  .mode-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .mode-toggle{display:flex;border:2px solid var(--ink-text);border-radius:999px;overflow:hidden;}
+  .mode-btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    padding:8px 16px; background:transparent; border:none; cursor:pointer; color:var(--ink-text);
+    transition:.15s;
+  }
+  .mode-btn.active{background:var(--ink-text); color:var(--paper);}
+  .mode-btn:disabled{cursor:not-allowed;opacity:.5;}
+  .mode-locked{font-size:11px;color:var(--ink-text-soft);font-style:italic;}
+
+  /* ---- gauge ---- */
+  .gauge-wrap{margin-top:16px;}
+  .gauge-track{
+    position:relative;
+    height:26px;
+    background:repeating-linear-gradient(90deg, var(--paper-2) 0 1px, transparent 1px 9px), #E4D8B8;
+    border:2px solid var(--ink-text);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .gauge-fill{
+    height:100%;
+    background:linear-gradient(90deg, var(--safe), var(--amber) 70%, var(--danger) 100%);
+    transition:width .35s ease;
+  }
+  .gauge-fill.over{background:var(--danger);}
+  .gauge-line{
+    position:absolute; top:-4px; bottom:-4px;
+    width:2px; background:var(--danger);
+    right:0;
+  }
+  .gauge-numbers{
+    display:flex; justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; margin-top:8px;
+  }
+  .gauge-numbers .cap{color:var(--danger); font-weight:700;}
+  .gauge-caption{font-size:11px; color:var(--ink-text-soft); margin-top:4px; text-transform:uppercase; letter-spacing:.05em;}
+
+  /* ---- seal block ---- */
+  .seal-block{
+    background:
+      repeating-linear-gradient(var(--paper) 0px, var(--paper) 27px, var(--paper-line) 28px),
+      var(--paper);
+    position:relative;
+  }
+  .seal-input-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .seal-input{
+    flex:1; min-width:160px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px; padding:10px 12px;
+    border:1.5px solid var(--ink-text); border-radius:3px;
+    background:#FBF6E9; color:var(--ink-text);
+  }
+  .seal-input:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  .btn{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase;
+    padding:11px 18px; border-radius:3px; border:2px solid var(--ink-text);
+    background:var(--ink-text); color:var(--paper); cursor:pointer;
+    transition:.15s;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn.danger{background:var(--danger); border-color:var(--danger); color:#fff;}
+  .btn.ghost{background:transparent; color:var(--ink-text);}
+  .btn.small{padding:7px 12px; font-size:11px;}
+  .seal-msg{color:var(--danger); font-size:12px; margin-top:8px; min-height:14px; font-weight:600;}
+  .seal-pledge-preview{font-size:12.5px; color:var(--ink-text-soft); margin-top:12px; line-height:1.6;}
+
+  .sealed-row{display:flex; gap:20px; align-items:center; flex-wrap:wrap;}
+  .stamp{
+    flex-shrink:0;
+    width:158px; height:96px;
+    border:4px double var(--danger);
+    border-radius:6px;
+    color:var(--danger);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transform:rotate(-7deg);
+    mix-blend-mode:multiply;
+    font-family:'Special Elite',cursive;
+    text-align:center;
+    letter-spacing:.08em;
+    line-height:1.3;
+    opacity:.92;
+  }
+  .stamp .big{font-size:18px;}
+  .stamp .mid{font-size:10px; margin-top:4px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .stamp .date{font-size:9.5px; margin-top:3px;}
+  .stamp-drop{animation:stampDrop .55s cubic-bezier(.2,1.4,.4,1);}
+  @keyframes stampDrop{
+    0%{transform:translateY(-60px) rotate(-7deg) scale(1.5); opacity:0;}
+    60%{transform:translateY(4px) rotate(-7deg) scale(.96); opacity:1;}
+    100%{transform:translateY(0) rotate(-7deg) scale(1);}
+  }
+  .pledge-text{font-size:13px; line-height:1.7; color:var(--ink-text); flex:1; min-width:200px;}
+  .pledge-text .sig{font-family:'Special Elite',cursive; font-size:15px; display:block; margin-top:6px;}
+  .break-link{font-size:11.5px; color:var(--ink-text-soft); text-decoration:underline; cursor:pointer; background:none; border:none; padding:0; margin-top:10px; font-family:'Inter';}
+  .confirm-box{margin-top:10px; background:#F6E4DB; border:1px solid var(--danger); border-radius:4px; padding:10px 12px; font-size:12.5px;}
+  .confirm-box .btn-row{display:flex; gap:8px; margin-top:8px;}
+
+  /* ---- fixed obligations ---- */
+  .fixed-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px;}
+  .fixed-item{
+    border:1.5px solid var(--ink-text); border-radius:4px; padding:12px;
+    cursor:pointer; user-select:none; transition:.15s; background:var(--paper-2);
+  }
+  .fixed-item.done{background:rgba(63,107,71,.14); border-color:var(--safe);}
+  .fixed-item-label{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-text-soft); margin-bottom:4px;}
+  .fixed-item-amount{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:16px;}
+  .fixed-item-stamp{font-size:10px; font-family:'Special Elite',cursive; margin-top:6px; color:var(--ink-text-soft);}
+  .fixed-item.done .fixed-item-stamp{color:var(--safe); font-weight:700;}
+
+  /* ---- envelopes ---- */
+  .envelopes{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px;}
+  .envelope{
+    border:1.5px solid var(--ink-text); border-radius:6px; background:var(--paper-2);
+    position:relative; overflow:hidden;
+  }
+  .envelope::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:10px;
+    background-image:radial-gradient(circle, var(--paper) 2.5px, transparent 2.6px);
+    background-size:12px 12px; background-position:0 -4px;
+    border-bottom:1px dashed var(--ink-text-soft);
+  }
+  .envelope-head{padding:16px 14px 8px;}
+  .envelope-title{font-family:'Special Elite',cursive; font-size:13px; text-transform:uppercase; letter-spacing:.06em;}
+  .envelope-sub{font-size:10.5px; color:var(--ink-text-soft); margin-top:2px;}
+  .envelope-nums{display:flex; justify-content:space-between; align-items:baseline; margin-top:10px;}
+  .envelope-remaining{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:18px;}
+  .envelope-remaining.over{color:var(--danger);}
+  .envelope-cap{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-text-soft);}
+  .mini-track{height:8px; border-radius:99px; background:#DCCFAB; margin-top:8px; overflow:hidden;}
+  .mini-fill{height:100%; background:var(--safe); transition:width .3s;}
+  .mini-fill.over{background:var(--danger);}
+
+  .envelope-form{padding:10px 14px; display:flex; gap:6px; flex-wrap:wrap; border-top:1px solid var(--paper-line);}
+  .envelope-form input{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:7px 8px;
+    border:1px solid var(--ink-text-soft); border-radius:3px; background:#FBF6E9; color:var(--ink-text);
+  }
+  .envelope-form input[type=number]{width:78px;}
+  .envelope-form input[type=text]{flex:1; min-width:80px;}
+  .envelope-form input[type=date]{width:120px; font-size:10.5px;}
+  .add-btn{
+    width:30px; height:30px; border-radius:4px; border:1.5px solid var(--ink-text);
+    background:var(--ink-text); color:var(--paper); font-size:16px; font-weight:700; cursor:pointer; line-height:1;
+  }
+
+  .entry-log{max-height:140px; overflow-y:auto; padding:0 14px 12px;}
+  .entry-row{
+    display:flex; justify-content:space-between; gap:8px; align-items:center;
+    font-size:11.5px; padding:5px 0; border-bottom:1px solid var(--paper-line);
+  }
+  .entry-row:last-child{border-bottom:none;}
+  .entry-info{overflow:hidden;}
+  .entry-amt{font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .entry-note{color:var(--ink-text-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .entry-date{font-family:'IBM Plex Mono',monospace; color:var(--ink-text-soft); font-size:10px;}
+  .entry-del{background:none; border:none; color:var(--danger); font-size:14px; cursor:pointer; padding:0 2px; flex-shrink:0;}
+  .empty-log{font-size:11px; color:var(--ink-text-soft); font-style:italic; padding:8px 14px 12px;}
+  .breach-tag{display:inline-block; font-family:'Special Elite',cursive; font-size:10px; color:var(--danger); margin-top:6px; padding:8px 14px 0;}
+
+  /* buffer + savings */
+  .vault-card{border:1.5px dashed var(--ink-text); border-radius:6px; padding:14px; background:var(--paper-2);}
+  .vault-head{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px;}
+  .vault-title{font-family:'Special Elite',cursive; font-size:13px; text-transform:uppercase; letter-spacing:.05em;}
+  .vault-note{font-size:11.5px; color:var(--ink-text-soft); margin-top:4px; line-height:1.5;}
+
+  .savings-card{border:1.5px solid var(--gold); border-radius:6px; padding:14px; background:rgba(184,144,46,.08); margin-top:14px;}
+  .sweep-toggle{display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer; user-select:none; font-size:12px;}
+  .sweep-box{width:16px; height:16px; border:1.5px solid var(--ink-text); border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px;}
+  .sweep-box.on{background:var(--safe); border-color:var(--safe); color:#fff;}
+
+  /* footer */
+  .footer-row{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .violations{font-family:'Special Elite',cursive; font-size:12px; color:var(--danger);}
+  .strikes{letter-spacing:2px;}
+  .footnote{font-size:10.5px; color:var(--ink-text-soft); text-align:center; margin-top:18px;}
+
+  .loading{color:#C9BBA0; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:13px; padding:60px 0;}
+
+  @media (prefers-reduced-motion:reduce){
+    .stamp-drop{animation:none;}
+    .btn:hover{transform:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">PKR &middot; Karachi &middot; Discretionary Pool Rs 24,000</div>
+    <h1 class="title">Personal Budget Ledger</h1>
+    <div class="subtitle">July 2026 &mdash; the month you stop running out before the 30th</div>
+    <div class="ledger" id="ledger">
+      <div class="loading">Opening your ledger…</div>
+    </div>
+    <div class="footnote">Lives in your browser. Numbers are saved automatically — close this and they'll still be here tomorrow.</div>
+  </div>
+
+<script>
+(function(){
+  const SALARY = 45000, FATHER = 20000, BROTHER = 1000;
+  const DAILY_RATE = 150, DAYS = 31, DAILY_CAP = DAILY_RATE * DAYS; // 4650
+  const CAPS = {
+    strict:   { eating: 2000, family: 2000, buffer: 6000, savings: 9350 },
+    flexible: { eating: 5000, family: 4000, buffer: 4000, savings: 6350 }
+  };
+  const STORAGE_KEY = 'ledger-state-v1';
+
+  function defaultState(){
+    return {
+      mode: 'strict',
+      sealed: false,
+      sealName: '',
+      sealDate: '',
+      checks: { father:false, brother:false, savings:false },
+      envelopes: { daily: [], eating: [], family: [] },
+      buffer: [],
+      violations: 0
+    };
+  }
+
+  let state = defaultState();
+  let pendingBreak = false;
+  let justSealed = false;
+
+  function getCaps(){
+    const c = CAPS[state.mode];
+    return { daily: DAILY_CAP, eating: c.eating, family: c.family, buffer: c.buffer, savings: c.savings };
+  }
+  function sum(arr){ return arr.reduce((s,e)=>s+Number(e.amount||0),0); }
+  function fmt(n){ return 'Rs ' + Math.round(n).toLocaleString('en-US'); }
+
+  function todayInfo(){
+    const now = new Date();
+    const julyStart = new Date(2026,6,1);
+    const augStart = new Date(2026,7,1);
+    if (now < julyStart){
+      const days = Math.ceil((julyStart - now)/86400000);
+      return { phase:'before', daysToGo: days, dateStr:'2026-07-01' };
+    } else if (now < augStart){
+      const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0'), d = String(now.getDate()).padStart(2,'0');
+      return { phase:'during', dayNum: now.getDate(), dateStr: `${y}-${m}-${d}` };
+    } else {
+      return { phase:'after', dateStr:'2026-07-31' };
+    }
+  }
+
+  function save(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){ console.error('Storage save failed', e); }
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw){
+        const parsed = JSON.parse(raw);
+        state = Object.assign(defaultState(), parsed);
+        state.checks = Object.assign({father:false,brother:false,savings:false}, parsed.checks||{});
+        state.envelopes = Object.assign({daily:[],eating:[],family:[]}, parsed.envelopes||{});
+        state.buffer = parsed.buffer || [];
+      }
+    }catch(e){
+      console.log('No saved ledger yet, starting fresh.');
+    }
+  }
+
+  function saveAndRender(){ save(); render(); }
+
+  function envelopeMeta(env){
+    const labels = {
+      daily:  { title:'Daily Envelope', sub:`Rs ${DAILY_RATE} per day × ${DAYS} days` },
+      eating: { title:'Eating Out', sub:'Friends, cafés, deliveries' },
+      family: { title:'Family Help', sub:'When someone asks' }
+    };
+    return labels[env];
+  }
+
+  function entryRowsHtml(env, entries){
+    if (!entries.length) return `<div class="empty-log">No entries yet.</div>`;
+    return `<div class="entry-log">` + entries.slice().reverse().map(e => `
+      <div class="entry-row">
+        <div class="entry-info">
+          <span class="entry-amt">${fmt(e.amount)}</span>
+          ${e.note ? `<span class="entry-note"> — ${escapeHtml(e.note)}</span>` : ''}
+          <div class="entry-date">${e.date}</div>
+        </div>
+        <button class="entry-del" data-action="delete-entry" data-env="${env}" data-id="${e.id}" aria-label="Delete entry">✕</button>
+      </div>
+    `).join('') + `</div>`;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function envelopeCard(env, ti){
+    const meta = envelopeMeta(env);
+    const cap = getCaps()[env];
+    const entries = state.envelopes[env];
+    const spent = sum(entries);
+    const remaining = cap - spent;
+    const over = remaining < 0;
+    const pct = Math.min(100, (spent/cap)*100);
+    const dateMin = '2026-07-01', dateMax = '2026-07-31';
+    const defaultDate = ti.phase === 'during' ? ti.dateStr : dateMin;
+    return `
+      <div class="envelope">
+        <div class="envelope-head">
+          <div class="envelope-title">${meta.title}</div>
+          <div class="envelope-sub">${meta.sub}</div>
+          <div class="envelope-nums">
+            <span class="envelope-remaining ${over?'over':''}">${fmt(Math.max(remaining, remaining))}</span>
+            <span class="envelope-cap">of ${fmt(cap)}</span>
+          </div>
+          <div class="mini-track"><div class="mini-fill ${over?'over':''}" style="width:${pct}%"></div></div>
+          ${over ? `<div class="breach-tag" style="padding:6px 0 0;">⚠ ENVELOPE BREACHED — stop spending here</div>` : ''}
+        </div>
+        <div class="envelope-form">
+          <input type="number" id="${env}-amount" placeholder="Rs" min="1">
+          <input type="text" id="${env}-note" placeholder="what for">
+          <input type="date" id="${env}-date" value="${defaultDate}" min="${dateMin}" max="${dateMax}">
+          <button class="add-btn" data-action="add-entry" data-env="${env}" aria-label="Add expense">+</button>
+        </div>
+        ${entryRowsHtml(env, entries)}
+      </div>
+    `;
+  }
+
+  function render(){
+    const ti = todayInfo();
+    const caps = getCaps();
+    const dailySpent = sum(state.envelopes.daily);
+    const eatingSpent = sum(state.envelopes.eating);
+    const familySpent = sum(state.envelopes.family);
+    const bufferUsed = sum(state.buffer);
+
+    const masterSpent = dailySpent + eatingSpent + familySpent;
+    const masterCap = caps.daily + caps.eating + caps.family;
+    const masterPct = Math.min(100, (masterSpent/masterCap)*100);
+    const masterOver = masterSpent > masterCap;
+
+    const violationCount = ['daily','eating','family'].filter(env => sum(state.envelopes[env]) > caps[env]).length;
+
+    // today strip content
+    let todayHtml = '';
+    if (ti.phase === 'before'){
+      todayHtml = `<div class="today-left">Plan begins <b>July 1, 2026</b>.<br>Use this time to read every envelope below before money starts moving.</div>
+        <div class="today-right">${ti.daysToGo} day${ti.daysToGo===1?'':'s'}<span class="small">until it starts</span></div>`;
+    } else if (ti.phase === 'during'){
+      const spentToday = state.envelopes.daily.filter(e=>e.date===ti.dateStr).reduce((s,e)=>s+Number(e.amount),0);
+      const leftToday = DAILY_RATE - spentToday;
+      todayHtml = `<div class="today-left">Today is <b>Day ${ti.dayNum} of 31</b>.<br>Daily allowance today: Rs ${DAILY_RATE}.</div>
+        <div class="today-right" style="color:${leftToday<0?'var(--danger)':'inherit'}">${fmt(leftToday)}<span class="small">left for today</span></div>`;
+    } else {
+      todayHtml = `<div class="today-left">July is over. Check the gauge below honestly, then break the seal to start August clean.</div>
+        <div class="today-right">31<span class="small">days closed</span></div>`;
+    }
+
+    // seal block content
+    let sealHtml = '';
+    if (!state.sealed){
+      sealHtml = `
+        <div class="seal-input-row">
+          <input class="seal-input" type="text" id="seal-name" placeholder="Type your full name to seal this budget">
+          <button class="btn" data-action="seal">Seal This Budget</button>
+        </div>
+        <div class="seal-msg" id="seal-msg"></div>
+        <div class="seal-pledge-preview">Sealing locks in <b>${state.mode === 'strict' ? 'the Strict' : 'the Flexible'}</b> version — Rs ${fmt(masterCap).replace('Rs ','')} total across Daily, Eating Out, and Family Help for the month. You can switch Strict/Flexible freely until you seal it. After that, changing it means breaking the seal and starting over.</div>
+      `;
+    } else {
+      sealHtml = `
+        <div class="sealed-row">
+          <div class="stamp ${justSealed ? 'stamp-drop':''}">
+            <div class="big">SEALED</div>
+            <div class="mid">${escapeHtml(state.sealName)}</div>
+            <div class="date">${state.sealDate} &middot; ${state.mode.toUpperCase()}</div>
+          </div>
+          <div class="pledge-text">
+            I will not cross <b>${fmt(masterCap)}</b> across Daily, Eating Out, and Family Help this month.
+            <span class="sig">— ${escapeHtml(state.sealName)}</span>
+            ${!pendingBreak ? `<button class="break-link" data-action="break-step1">Break the seal &amp; start over</button>` : `
+              <div class="confirm-box">This deletes every entry and unlocks the mode toggle. There's no undo. Sure?
+                <div class="btn-row">
+                  <button class="btn danger small" data-action="break-confirm">Yes, reset everything</button>
+                  <button class="btn ghost small" data-action="break-cancel">Cancel</button>
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+    justSealed = false;
+
+    const html = `
+      <div class="section seal-block">
+        <div class="section-label"><span class="num">01</span> Sign &amp; Seal</div>
+        ${sealHtml}
+      </div>
+
+      <div class="section today-strip">
+        ${todayHtml}
+      </div>
+
+      <div class="section">
+        <div class="mode-row">
+          <div class="section-label" style="margin:0;"><span class="num">02</span> Mode</div>
+          <div class="mode-toggle">
+            <button class="mode-btn ${state.mode==='strict'?'active':''}" data-action="set-mode" data-mode="strict" ${state.sealed?'disabled':''}>Strict</button>
+            <button class="mode-btn ${state.mode==='flexible'?'active':''}" data-action="set-mode" data-mode="flexible" ${state.sealed?'disabled':''}>Flexible</button>
+          </div>
+        </div>
+        ${state.sealed ? `<div class="mode-locked" style="margin-top:8px;">🔒 Locked until you break the seal.</div>` : ''}
+
+        <div class="gauge-wrap">
+          <div class="gauge-track">
+            <div class="gauge-fill ${masterOver?'over':''}" style="width:${masterPct}%"></div>
+          </div>
+          <div class="gauge-numbers">
+            <span>${fmt(masterSpent)} spent</span>
+            <span class="cap">DO NOT CROSS: ${fmt(masterCap)}</span>
+          </div>
+          <div class="gauge-caption">Daily + Eating Out + Family Help, combined. Buffer and Savings are moved aside on Day 1 and don't count here.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label"><span class="num">03</span> Fixed Obligations — pay these first, Day 1</div>
+        <div class="fixed-grid">
+          <div class="fixed-item ${state.checks.father?'done':''}" data-action="toggle-check" data-check="father">
+            <div class="fixed-item-label">Father — house</div>
+            <div class="fixed-item-amount">${fmt(FATHER)}</div>
+            <div class="fixed-item-stamp">${state.checks.father?'✓ PAID':'tap when paid'}</div>
+          </div>
+          <div class="fixed-item ${state.checks.brother?'done':''}" data-action="toggle-check" data-check="brother">
+            <div class="fixed-item-label">Brother</div>
+            <div class="fixed-item-amount">${fmt(BROTHER)}</div>
+            <div class="fixed-item-stamp">${state.checks.brother?'✓ PAID':'tap when paid'}</div>
+          </div>
+          <div class="fixed-item ${state.checks.savings?'done':''}" data-action="toggle-check" data-check="savings">
+            <div class="fixed-item-label">Savings — swept away</div>
+            <div class="fixed-item-amount">${fmt(caps.savings)}</div>
+            <div class="fixed-item-stamp">${state.checks.savings?'✓ MOVED':'tap when moved'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label"><span class="num">04</span> Spending Envelopes</div>
+        <div class="envelopes">
+          ${envelopeCard('daily', ti)}
+          ${envelopeCard('eating', ti)}
+          ${envelopeCard('family', ti)}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label"><span class="num">05</span> Buffer Vault — emergencies only</div>
+        <div class="vault-card">
+          <div class="vault-head">
+            <div class="vault-title">Buffer</div>
+            <div class="envelope-nums" style="margin-top:0;">
+              <span class="envelope-remaining ${bufferUsed>caps.buffer?'over':''}">${fmt(caps.buffer - bufferUsed)}</span>
+              <span class="envelope-cap">of ${fmt(caps.buffer)}</span>
+            </div>
+          </div>
+          <div class="vault-note">Real medical issue, urgent bill, genuine crisis — yes. "Ran out of daily money" or "wanted to eat out more" — no. If you use this, refill it next month before funding Eating Out or Family Help.</div>
+          <div class="envelope-form" style="padding:12px 0 0; border-top:none;">
+            <input type="number" id="buffer-amount" placeholder="Rs" min="1">
+            <input type="text" id="buffer-note" placeholder="what emergency">
+            <input type="date" id="buffer-date" value="${ti.phase==='during'?ti.dateStr:'2026-07-01'}" min="2026-07-01" max="2026-07-31">
+            <button class="add-btn" data-action="add-entry" data-env="buffer">+</button>
+          </div>
+          ${entryRowsHtml('buffer', state.buffer)}
+        </div>
+
+        <div class="savings-card">
+          <div class="vault-title">Savings — ${fmt(caps.savings)}</div>
+          <div class="vault-note">Moved out of your spending account on Day 1, into an account you don't carry a card for. There is nothing to log here because you are not supposed to touch it.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="footer-row">
+          <div class="violations">
+            Breaches this month: <span class="strikes">${'✗'.repeat(state.violations) || '— none yet —'}</span>
+          </div>
+          <div style="font-size:11px; color:var(--ink-text-soft);">${violationCount>0 ? `${violationCount} envelope${violationCount>1?'s':''} currently over cap` : 'All envelopes currently inside cap'}</div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('ledger').innerHTML = html;
+    attachHandlers();
+  }
+
+  function attachHandlers(){
+    const root = document.getElementById('ledger');
+    root.onclick = function(e){
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+
+      if (action === 'seal') return handleSeal();
+      if (action === 'break-step1'){ pendingBreak = true; render(); return; }
+      if (action === 'break-confirm'){
+        state = defaultState();
+        pendingBreak = false;
+        saveAndRender();
+        return;
+      }
+      if (action === 'break-cancel'){ pendingBreak = false; render(); return; }
+      if (action === 'set-mode'){
+        if (state.sealed) return;
+        state.mode = btn.dataset.mode;
+        saveAndRender();
+        return;
+      }
+      if (action === 'toggle-check'){
+        const k = btn.dataset.check;
+        state.checks[k] = !state.checks[k];
+        saveAndRender();
+        return;
+      }
+      if (action === 'add-entry'){
+        const env = btn.dataset.env;
+        addEntry(env);
+        return;
+      }
+      if (action === 'delete-entry'){
+        const env = btn.dataset.env, id = btn.dataset.id;
+        const list = env === 'buffer' ? state.buffer : state.envelopes[env];
+        const idx = list.findIndex(e => String(e.id) === String(id));
+        if (idx > -1) list.splice(idx,1);
+        saveAndRender();
+        return;
+      }
+    };
+  }
+
+  function handleSeal(){
+    const nameInput = document.getElementById('seal-name');
+    const msg = document.getElementById('seal-msg');
+    const name = nameInput.value.trim();
+    if (!name){
+      msg.textContent = 'Enter your name to seal it.';
+      nameInput.focus();
+      return;
+    }
+    const ti = todayInfo();
+    state.sealed = true;
+    state.sealName = name;
+    state.sealDate = ti.phase === 'during' ? ti.dateStr : '2026-07-01';
+    justSealed = true;
+    saveAndRender();
+  }
+
+  function addEntry(env){
+    const amountEl = document.getElementById(`${env}-amount`);
+    const noteEl = document.getElementById(`${env}-note`);
+    const dateEl = document.getElementById(`${env}-date`);
+    const amount = Number(amountEl.value);
+    if (!amount || amount <= 0){ amountEl.focus(); return; }
+    const note = noteEl.value.trim();
+    const date = dateEl.value || '2026-07-01';
+
+    const list = env === 'buffer' ? state.buffer : state.envelopes[env];
+    const cap = env === 'buffer' ? getCaps().buffer : getCaps()[env];
+    const wasOver = sum(list) > cap;
+    list.push({ id: Date.now() + Math.random().toString(16).slice(2), amount, note, date });
+    const isOverNow = sum(list) > cap;
+    if (env !== 'buffer' && !wasOver && isOverNow){
+      state.violations++;
+    }
+    saveAndRender();
+  }
+
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
